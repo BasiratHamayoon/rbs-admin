@@ -75,7 +75,7 @@ const Sidebar = () => {
               <div className="flex items-center gap-3">
                 <Building size={32} className="text-white" />
                 <div>
-                  <h1 className="text-xl font-bold">RBS Construction</h1>
+                  <h1 className="text-xl font-bold">RBS</h1>
                   <p className="text-blue-200 text-sm">Admin Portal</p>
                 </div>
               </div>
@@ -160,7 +160,7 @@ const Sidebar = () => {
         <div className="flex items-center gap-3 mb-8">
           <Building size={32} className="text-white" />
           <div>
-            <h1 className="text-xl font-bold">RBS Construction</h1>
+            <h1 className="text-xl font-bold">RBS</h1>
             <p className="text-blue-200 text-sm">Admin Portal</p>
           </div>
         </div>

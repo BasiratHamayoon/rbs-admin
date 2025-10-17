@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { Building } from 'lucide-react';
+import { Building, Eye, EyeOff } from 'lucide-react';
 import Button from '../ui/Button';
 import { useRouter } from 'next/navigation';
 
@@ -14,6 +14,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login } = useAuth();
   const router = useRouter();
@@ -56,6 +57,10 @@ const Login = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#001C73] to-[#0026A3] flex items-center justify-center p-4">
       <motion.div
@@ -74,7 +79,7 @@ const Login = () => {
             </div>
           </motion.div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            RBS Construction
+            RBS
           </h1>
           <p className="text-gray-600">Admin Portal Login</p>
         </div>
@@ -107,21 +112,33 @@ const Login = () => {
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-800 mb-2">
               Password
             </label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-600"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-600 pr-12"
               placeholder="Enter your password"
               disabled={loading}
               autoComplete="current-password"
             />
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute right-3 top-[36px] text-gray-500 hover:text-gray-700 focus:outline-none mt-2"
+              disabled={loading}
+            >
+              {showPassword ? (
+                <EyeOff size={20} />
+              ) : (
+                <Eye size={20} />
+              )}
+            </button>
           </div>
 
           <Button
