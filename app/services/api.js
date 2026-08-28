@@ -1,18 +1,19 @@
 import axios from 'axios';
 
-// ✅ Use NEXT_PUBLIC_API_URL for Next.js
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-console.log('🔗 API Base URL:', API_BASE_URL); // Debug log
+// Ensure no trailing slash
+const rawBaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = rawBaseURL.replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add token to requests
 api.interceptors.request.use(
   (config) => {
-    // ✅ Only run on client side
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('adminToken');
       if (token) {
@@ -21,20 +22,21 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Handle token expiration
+// Handle token expiration safely
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // ✅ Only run on client side and don't redirect to /admin/login
-    if (typeof window !== 'undefined' && error.response?.status === 401) {
-      localStorage.removeItem('adminToken');
-      // ✅ Redirect to /login instead of /admin/login
-      window.location.href = '/login';
+    if (typeof window !== 'undefined') {
+      const isLoginRequest = error.config?.url?.includes('/admin/login');
+
+      // Only redirect on 401 if it's NOT the login page itself
+      if (error.response?.status === 401 && !isLoginRequest) {
+        localStorage.removeItem('adminToken');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
