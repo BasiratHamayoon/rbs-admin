@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -8,7 +9,6 @@ import {
   MessageSquare, 
   FileText, 
   LogOut,
-  Building,
   X,
   Settings
 } from 'lucide-react';
@@ -33,7 +33,6 @@ const Sidebar = () => {
 
   const handleNavigation = (path) => {
     router.push(path);
-    // Close sidebar on mobile after navigation
     if (window.innerWidth < 1024) {
       closeSidebar();
     }
@@ -46,7 +45,6 @@ const Sidebar = () => {
 
   const handleAdminSettings = () => {
     setShowAdminModal(true);
-    // Close sidebar on mobile when opening settings
     if (window.innerWidth < 1024) {
       closeSidebar();
     }
@@ -59,7 +57,6 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -70,14 +67,16 @@ const Sidebar = () => {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed lg:hidden w-64 bg-[#001C73] text-white h-screen p-6 flex flex-col z-50 left-0 top-0 overflow-y-auto"
           >
-            {/* Close Button for Mobile */}
             <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <Building size={32} className="text-white" />
-                <div>
-                  <h1 className="text-xl font-bold">RBS</h1>
-                  <p className="text-blue-200 text-sm">Admin Portal</p>
-                </div>
+              <div className="relative w-32 h-12">
+                <Image
+                  src="/logos/white.png"
+                  alt="RBS Admin Logo"
+                  fill
+                  sizes="130px"
+                  className="object-contain object-left"
+                  priority
+                />
               </div>
               <button
                 onClick={closeSidebar}
@@ -87,7 +86,6 @@ const Sidebar = () => {
               </button>
             </div>
 
-            {/* Navigation Menu */}
             <nav className="flex-1">
               {menuItems.map((item, index) => {
                 const Icon = item.icon;
@@ -113,9 +111,7 @@ const Sidebar = () => {
               })}
             </nav>
 
-            {/* Admin Profile & Logout Section */}
             <div className="border-t border-blue-500 pt-4 mt-auto">
-              {/* Admin Profile Clickable Area */}
               <button
                 onClick={handleAdminSettings}
                 className="w-full flex items-center gap-3 px-4 py-3 mb-4 text-blue-100 hover:bg-white/10 hover:text-white rounded-xl transition-all duration-300"
@@ -150,22 +146,24 @@ const Sidebar = () => {
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar */}
       <motion.div
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         className="hidden lg:flex w-64 bg-[#001C73] text-white h-screen p-6 flex-col fixed left-0 top-0 overflow-y-auto z-30"
       >
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 mb-8">
-          <Building size={32} className="text-white" />
-          <div>
-            <h1 className="text-xl font-bold">RBS</h1>
-            <p className="text-blue-200 text-sm">Admin Portal</p>
+        <div className="flex items-center mb-8">
+          <div className="relative w-40 h-14">
+            <Image
+              src="/logos/white.png"
+              alt="RBS Admin Logo"
+              fill
+              sizes="160px"
+              className="object-contain object-left"
+              priority
+            />
           </div>
         </div>
 
-        {/* Navigation Menu */}
         <nav className="flex-1">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
@@ -191,9 +189,7 @@ const Sidebar = () => {
           })}
         </nav>
 
-        {/* Admin Profile & Logout Section */}
         <div className="border-t border-blue-500 pt-4 mt-auto">
-          {/* Admin Profile Clickable Area */}
           <button
             onClick={handleAdminSettings}
             className="w-full flex items-center gap-3 px-4 py-3 mb-4 text-blue-100 hover:bg-white/10 hover:text-white rounded-xl transition-all duration-300"
@@ -226,7 +222,6 @@ const Sidebar = () => {
         </div>
       </motion.div>
 
-      {/* Admin Management Modal */}
       <AdminManagementModal
         isOpen={showAdminModal}
         onClose={() => setShowAdminModal(false)}

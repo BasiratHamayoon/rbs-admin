@@ -1,5 +1,7 @@
+"use client";
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Upload, X, Plus, Info, Layers, Image as ImageIcon, Settings, Star } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { PROJECT_CATEGORIES } from '../../utils/constants';
 import { projectAPI } from '../../services/api';
@@ -20,13 +22,15 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
     featured: project?.featured || false
   });
   const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState(project?.images || []);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [techInput, setTechInput] = useState('');
   const [featureInput, setFeatureInput] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
@@ -34,7 +38,7 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
 
   const addTechnology = () => {
     if (techInput.trim() && !formData.technologies.includes(techInput.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         technologies: [...prev.technologies, techInput.trim()]
       }));
@@ -43,7 +47,7 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
   };
 
   const removeTechnology = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       technologies: prev.technologies.filter((_, i) => i !== index)
     }));
@@ -51,7 +55,7 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
 
   const addFeature = () => {
     if (featureInput.trim() && !formData.features.includes(featureInput.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         features: [...prev.features, featureInput.trim()]
       }));
@@ -60,14 +64,27 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
   };
 
   const removeFeature = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       features: prev.features.filter((_, i) => i !== index)
     }));
   };
 
   const handleImageChange = (e) => {
-    setImages(Array.from(e.target.files));
+    const files = Array.from(e.target.files);
+    setImages((prev) => [...prev, ...files]);
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews((prev) => [...prev, ...previews]);
+  };
+
+  const removeNewImage = (index) => {
+    URL.revokeObjectURL(imagePreviews[index]);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -77,43 +94,30 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
     try {
       const submitData = new FormData();
 
-      // Add all form fields
-      Object.keys(formData).forEach(key => {
+      Object.keys(formData).forEach((key) => {
         if (key === 'technologies' || key === 'features') {
-          // Convert arrays to JSON strings
           submitData.append(key, JSON.stringify(formData[key]));
         } else if (key === 'featured') {
-          // Convert boolean to string
           submitData.append(key, formData[key].toString());
         } else {
           submitData.append(key, formData[key]);
         }
       });
 
-      // Add images only if there are new ones
-      images.forEach(image => {
+      images.forEach((image) => {
         submitData.append('images', image);
       });
 
-      console.log('Submitting project data:', {
-        ...formData,
-        imagesCount: images.length
-      });
-
       if (project) {
-        // Update existing project
+        submitData.append('existingImages', JSON.stringify(existingImages));
         await projectAPI.update(project._id, submitData);
-        console.log('Project updated successfully');
       } else {
-        // Create new project
         await projectAPI.create(submitData);
-        console.log('Project created successfully');
       }
 
       onSuccess();
     } catch (error) {
       console.error('Error saving project:', error);
-      console.error('Error details:', error.response?.data);
       alert(`Error saving project: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
@@ -122,260 +126,374 @@ const ProjectForm = ({ project, onSuccess, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Project Title *
-          </label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., Modern Villa Construction"
-          />
+      <div className="bg-blue-50 rounded-xl p-5 border border-[#001C73]/20">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#001C73]/15">
+          <div className="w-8 h-8 bg-[#001C73] rounded-lg flex items-center justify-center">
+            <Info className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-sm font-bold text-[#001C73] uppercase tracking-wide">
+            Basic Information
+          </h3>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Category *
-          </label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 bg-white"
-          >
-            <option value="" className="text-gray-700">Select a category</option>
-            {PROJECT_CATEGORIES.map(category => (
-              <option key={category} value={category} className="text-gray-900">
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Project Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white transition-all"
+              placeholder="e.g., Modern Villa Construction"
+            />
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-800 mb-2">
-          Description *
-        </label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          required
-          rows={4}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent resize-none placeholder-gray-700 text-gray-900"
-          placeholder="Describe the project in detail including scope, challenges, and solutions..."
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Duration *
-          </label>
-          <input
-            type="text"
-            name="duration"
-            value={formData.duration}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., 6 months, 12 weeks"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Size *
-          </label>
-          <input
-            type="text"
-            name="size"
-            value={formData.size}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., 2500 sq ft, 500 sq meters"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Completion Date *
-          </label>
-          <input
-            type="date"
-            name="completionDate"
-            value={formData.completionDate}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Location *
-          </label>
-          <input
-            type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., Downtown Toronto, ON"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-800 mb-2">
-            Client *
-          </label>
-          <input
-            type="text"
-            name="client"
-            value={formData.client}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., ABC Corporation, John Smith"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-800 mb-2">
-          Technologies Used
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={techInput}
-            onChange={(e) => setTechInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., Concrete, Steel Frame, Smart Home"
-          />
-          <Button type="button" onClick={addTechnology}>
-            Add
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {formData.technologies.map((tech, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 bg-white transition-all"
             >
-              {tech}
-              <button
-                type="button"
-                onClick={() => removeTechnology(index)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-bold ml-1 transition-colors"
-              >
-                ×
-              </button>
-            </span>
-          ))}
+              <option value="">Select a category</option>
+              {PROJECT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-800 mb-2">
-          Key Features
-        </label>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={featureInput}
-            onChange={(e) => setFeatureInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent placeholder-gray-700 text-gray-900"
-            placeholder="e.g., Swimming Pool, Garden, Garage"
+        <div className="mt-4">
+          <label className="block text-sm font-semibold text-[#001C73] mb-2">
+            Description <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+            rows={4}
+            className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent resize-none text-gray-900 placeholder-gray-400 bg-white transition-all"
+            placeholder="Describe the project in detail..."
           />
-          <Button type="button" onClick={addFeature}>
-            Add
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {formData.features.map((feature, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-            >
-              {feature}
-              <button
-                type="button"
-                onClick={() => removeFeature(index)}
-                className="text-blue-600 hover:text-blue-800 text-sm font-bold ml-1 transition-colors"
-              >
-                ×
-              </button>
-            </span>
-          ))}
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-800 mb-2">
-          Project Images
+      <div className="bg-blue-50 rounded-xl p-5 border border-[#001C73]/20">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#001C73]/15">
+          <div className="w-8 h-8 bg-[#001C73] rounded-lg flex items-center justify-center">
+            <Settings className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-sm font-bold text-[#001C73] uppercase tracking-wide">
+            Project Details
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Duration <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white transition-all"
+              placeholder="e.g., 6 months"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Size <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="size"
+              value={formData.size}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white transition-all"
+              placeholder="e.g., 2500 sq ft"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Completion Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="completionDate"
+              value={formData.completionDate}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 bg-white transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Location <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white transition-all"
+              placeholder="e.g., Riyadh, Saudi Arabia"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-[#001C73] mb-2">
+              Client <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="client"
+              value={formData.client}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white transition-all"
+              placeholder="e.g., ABC Corporation"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 rounded-xl p-5 border border-[#001C73]/20">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#001C73]/15">
+          <div className="w-8 h-8 bg-[#001C73] rounded-lg flex items-center justify-center">
+            <Layers className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-sm font-bold text-[#001C73] uppercase tracking-wide">
+            Technologies & Features
+          </h3>
+        </div>
+
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-[#001C73] mb-2">
+            Technologies Used
+          </label>
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={techInput}
+              onChange={(e) => setTechInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
+              className="flex-1 px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white"
+              placeholder="e.g., Concrete, Steel Frame"
+            />
+            <Button
+              type="button"
+              onClick={addTechnology}
+              className="bg-[#001C73] hover:bg-[#001255] text-white px-5 rounded-lg flex items-center gap-1 font-semibold"
+            >
+              <Plus size={18} />
+              Add
+            </Button>
+          </div>
+          {formData.technologies.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {formData.technologies.map((tech, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#001C73] text-white rounded-full text-sm font-medium shadow-sm"
+                >
+                  {tech}
+                  <button
+                    type="button"
+                    onClick={() => removeTechnology(index)}
+                    className="hover:bg-white/25 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-[#001C73] mb-2">
+            Key Features
+          </label>
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={featureInput}
+              onChange={(e) => setFeatureInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+              className="flex-1 px-4 py-3 border border-[#001C73]/25 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent text-gray-900 placeholder-gray-400 bg-white"
+              placeholder="e.g., Swimming Pool, Garden"
+            />
+            <Button
+              type="button"
+              onClick={addFeature}
+              className="bg-[#001C73] hover:bg-[#001255] text-white px-5 rounded-lg flex items-center gap-1 font-semibold"
+            >
+              <Plus size={18} />
+              Add
+            </Button>
+          </div>
+          {formData.features.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {formData.features.map((feature, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#001C73] text-white rounded-full text-sm font-medium shadow-sm"
+                >
+                  {feature}
+                  <button
+                    type="button"
+                    onClick={() => removeFeature(index)}
+                    className="hover:bg-white/25 rounded-full p-0.5 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-blue-50 rounded-xl p-5 border border-[#001C73]/20">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#001C73]/15">
+          <div className="w-8 h-8 bg-[#001C73] rounded-lg flex items-center justify-center">
+            <ImageIcon className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-sm font-bold text-[#001C73] uppercase tracking-wide">
+            Project Images
+          </h3>
+        </div>
+
+        <label
+          htmlFor="image-upload"
+          className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-[#001C73]/40 rounded-xl cursor-pointer bg-white hover:bg-blue-50 hover:border-[#001C73] transition-all"
+        >
+          <div className="w-12 h-12 bg-[#001C73] rounded-full flex items-center justify-center mb-3">
+            <Upload className="w-6 h-6 text-white" />
+          </div>
+          <p className="text-sm text-[#001C73] font-bold">Click to upload multiple images</p>
+          <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (Max 10MB each)</p>
+          <input
+            id="image-upload"
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageChange}
+            className="hidden"
+          />
         </label>
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={handleImageChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#001C73] file:text-white hover:file:bg-[#001255] text-gray-900"
-        />
-        <p className="text-sm text-gray-700 mt-2">
-          Select multiple high-quality images showcasing the project (JPEG, PNG, WebP)
-        </p>
-        {images.length > 0 && (
-          <p className="text-sm text-blue-600 font-medium mt-1">
-            {images.length} image(s) selected
-          </p>
+
+        {existingImages.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-bold text-[#001C73] mb-3">
+              Current Images ({existingImages.length}):
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {existingImages.map((img, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={img.url}
+                    alt={`Existing ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-lg shadow-md border-2 border-[#001C73]/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {imagePreviews.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-bold text-[#001C73] mb-3">
+              New Images ({imagePreviews.length}):
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {imagePreviews.map((preview, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-lg shadow-md border-2 border-[#001C73]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeNewImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2">
+      <div className="bg-blue-50 rounded-xl p-5 border border-[#001C73]/20">
+        <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
             name="featured"
             checked={formData.featured}
             onChange={handleChange}
-            className="w-4 h-4 text-[#001C73] border-gray-300 rounded focus:ring-[#001C73]"
+            className="w-5 h-5 text-[#001C73] border-[#001C73]/30 rounded focus:ring-[#001C73] accent-[#001C73]"
           />
-          <span className="text-sm font-medium text-gray-800">
-            Mark as featured project
-          </span>
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-[#001C73]" />
+            <div>
+              <span className="text-sm font-bold text-[#001C73]">Mark as Featured Project</span>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Featured projects will be highlighted on the homepage
+              </p>
+            </div>
+          </div>
         </label>
       </div>
 
-      <div className="flex gap-4 justify-end pt-6 border-t border-gray-200">
+      <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-[#001C73]/15">
         <Button
           type="button"
           variant="secondary"
           onClick={onCancel}
           disabled={loading}
-          className="text-gray-700 border-gray-300 hover:bg-gray-50"
+          className="px-6 py-3 border-2 border-[#001C73]/30 text-[#001C73] hover:bg-blue-50 rounded-xl font-semibold transition-all"
         >
           Cancel
         </Button>
         <Button
           type="submit"
           loading={loading}
-          className="bg-[#001C73] hover:bg-[#001255] text-white"
+          className="px-6 py-3 bg-[#001C73] hover:bg-[#001255] text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg"
         >
-          {project ? 'Update Project' : 'Create Project'}
+          {loading ? 'Saving...' : project ? 'Update Project' : 'Create Project'}
         </Button>
       </div>
     </form>

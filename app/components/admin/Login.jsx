@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { Building, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import Button from '../ui/Button';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +13,7 @@ const Login = () => {
     username: '',
     password: ''
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,24 +31,15 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log('Login form submitted');
-    
     setLoading(true);
     setError('');
 
     try {
       const result = await login(formData.username, formData.password);
-      
-      console.log('Login result:', result);
-      
       if (result.success) {
-        console.log('Login successful, redirecting...');
-        // Use Next.js router for client-side navigation
         router.push('/admin');
-        router.refresh(); // Force refresh to update all components
+        router.refresh();
       } else {
-        console.log('Login failed:', result.message);
         setError(result.message);
       }
     } catch (err) {
@@ -57,108 +50,146 @@ const Login = () => {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#001C73] to-[#0026A3] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md"
+        className="absolute top-[-120px] left-[-120px] w-[350px] h-[350px] bg-blue-300/40 rounded-full blur-3xl animate-pulse"
+        animate={{
+          x: [0, 50, 0],
+          y: [0, 40, 0],
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      
+      <motion.div
+        className="absolute bottom-[-120px] right-[-120px] w-[400px] h-[400px] bg-[#001C73]/20 rounded-full blur-3xl"
+        animate={{
+          x: [0, -50, 0],
+          y: [0, -40, 0],
+        }}
+        transition={{
+          duration: 14,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+
+      <div 
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `linear-gradient(#001C73 1px, transparent 1px), linear-gradient(to right, #001C73 1px, transparent 1px)`,
+          backgroundSize: '30px 30px'
+        }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full max-w-sm relative z-10"
       >
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ y: -20 }}
-            animate={{ y: 0 }}
-            className="flex justify-center mb-4"
-          >
-            <div className="p-3 bg-[#001C73] rounded-xl">
-              <Building size={32} className="text-white" />
+        <div className="bg-white/95 backdrop-blur-xl border-2 border-gray-200 rounded-2xl shadow-xl p-6 sm:p-8">
+          <div className="text-center mb-6 flex flex-col items-center">
+            <div className="relative w-36 h-12 mb-2">
+              <Image
+                src="/logos/blue.png"
+                alt="RBS Logo"
+                fill
+                sizes="144px"
+                className="object-contain object-center"
+                priority
+                loading="eager"
+              />
             </div>
-          </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            RBS
-          </h1>
-          <p className="text-gray-600">Admin Portal Login</p>
+            <h1 className="text-lg font-bold text-gray-900 tracking-wide uppercase">
+              Admin Portal
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">Please sign in to secure your session</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-2.5 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs font-medium rounded"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <div className="relative">
+              <div className="absolute bottom-2 left-1 text-gray-400">
+                <User size={16} />
+              </div>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                className="w-full pl-8 pr-3 py-1.5 bg-transparent border-b border-gray-300 focus:border-[#001C73] focus:outline-none transition-all duration-300 text-gray-900 placeholder-gray-400 text-sm"
+                placeholder="Username"
+                disabled={loading}
+                autoComplete="username"
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute bottom-2 left-1 text-gray-400">
+                <Lock size={16} />
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full pl-8 pr-10 py-1.5 bg-transparent border-b border-gray-300 focus:border-[#001C73] focus:outline-none transition-all duration-300 text-gray-900 placeholder-gray-400 text-sm"
+                placeholder="Password"
+                disabled={loading}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-1 bottom-2 text-gray-400 hover:text-[#001C73] focus:outline-none transition-colors"
+                disabled={loading}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-xs pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-gray-300 text-[#001C73] focus:ring-[#001C73] accent-[#001C73]"
+                />
+                <span className="text-gray-500 font-medium">Remember me</span>
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              loading={loading}
+              className="w-full bg-[#001C73] hover:bg-[#001255] text-white py-2.5 rounded-lg font-bold tracking-wide transition-all shadow-md hover:shadow-lg mt-2 text-sm"
+              disabled={loading}
+            >
+              {loading ? 'Signing In...' : 'SIGN IN'}
+            </Button>
+          </form>
+
+          <p className="text-center text-[10px] text-gray-400 font-semibold mt-6 tracking-widest uppercase">
+            SECURE CONNECTION REQUIRED
+          </p>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-600"
-              placeholder="Enter your username"
-              disabled={loading}
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Password
-            </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#001C73] focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-600 pr-12"
-              placeholder="Enter your password"
-              disabled={loading}
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className="absolute right-3 top-[36px] text-gray-500 hover:text-gray-700 focus:outline-none mt-2"
-              disabled={loading}
-            >
-              {showPassword ? (
-                <EyeOff size={20} />
-              ) : (
-                <Eye size={20} />
-              )}
-            </button>
-          </div>
-
-          <Button
-            type="submit"
-            loading={loading}
-            className="w-full"
-            disabled={loading}
-          >
-            Sign In
-          </Button>
-        </form>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center text-gray-500 text-sm mt-6"
-        >
-          Secure admin access only
-        </motion.p>
       </motion.div>
     </div>
   );
